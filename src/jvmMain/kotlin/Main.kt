@@ -1,17 +1,6 @@
-import Animation.IDLE
-import Animation.WALKING
-import Direction.DOWN
-import Direction.LEFT
-import Direction.RIGHT
-import Direction.UP
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Image
+
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.size
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.runtime.LaunchedEffect
@@ -20,19 +9,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.FilterQuality
-import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.type
-import androidx.compose.ui.res.loadImageBitmap
-import androidx.compose.ui.res.useResource
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 
@@ -41,28 +22,23 @@ enum class Animation {
     WALKING
 }
 
-@OptIn(ExperimentalComposeUiApi::class)
+const val frameDurationMs = 60
+
 fun main() = application {
-    val movementDuration = 256
-    val movementDistance = 16.dp
-
-    val pressed = remember { mutableSetOf<Key>() }
-    var direction = remember { DOWN }
-    var animation = remember { IDLE }
-
-    val directionKeys = remember { setOf(Key.DirectionLeft, Key.DirectionRight, Key.DirectionUp, Key.DirectionDown) }
+    val pressedKeys = remember { mutableSetOf<Key>() }
 
     Window(
         onCloseRequest = ::exitApplication,
+        resizable = false,
         onPreviewKeyEvent = {
             when {
                 (it.type == KeyEventType.KeyDown) -> {
-                    pressed.add(it.key)
+                    pressedKeys.add(it.key)
                     true
                 }
 
                 (it.type == KeyEventType.KeyUp) -> {
-                    pressed.remove(it.key)
+                    pressedKeys.remove(it.key)
                     true
                 }
 
@@ -73,106 +49,29 @@ fun main() = application {
         MaterialTheme {
             Surface {
                 var prevTime = remember { 0L }
-                var movementMs = remember { movementDuration.toFloat() }
-                var x by remember { mutableStateOf(0.dp) }
-                var y by remember { mutableStateOf(0.dp) }
-                var frame by remember { mutableStateOf(-1) }
-
-                LaunchedEffect(Unit) {
-                    while (true) {
-                        withFrameNanos { time ->
-                            val deltaMs = (time - prevTime) / (1000f * 1000f)
-                            movementMs += deltaMs
-                            prevTime = time
-
-                            val directionPressed = pressed.intersect(directionKeys).isNotEmpty()
-
-                            if (directionPressed) {
-                                if (movementMs >= movementDuration) {
-                                    when {
-                                        pressed.contains(Key.DirectionLeft) -> {
-                                            x -= movementDistance
-                                            direction = LEFT
-                                        }
-
-                                        pressed.contains(Key.DirectionRight) -> {
-                                            x += movementDistance
-                                            direction = RIGHT
-                                        }
-
-                                        pressed.contains(Key.DirectionUp) -> {
-                                            y -= movementDistance
-                                            direction = UP
-                                        }
-
-                                        pressed.contains(Key.DirectionDown) -> {
-                                            y += movementDistance
-                                            direction = DOWN
-                                        }
-                                    }
-                                    movementMs = 0f
-
-                                    ++frame
-                                    if (frame >= 4) {
-                                        frame = 0
-                                    }
-                                }
-
-                                animation = WALKING
-                            } else {
-                                movementMs = movementDuration.toFloat()
-                                frame = -1
-                                animation = IDLE
-                            }
-                        }
-                    }
-                }
-
-                val resource = when (animation) {
-                    IDLE -> "hero_idle.png"
-                    WALKING -> "hero_walking.png"
-                }
-
-                val bitmap = useResource(resource) { loadImageBitmap(it) }
-
-                val columnIndex = when (animation) {
-                    IDLE -> 0
-                    WALKING -> frame
-                }
-
-                val rowIndex = when (direction) {
-                    DOWN -> 0
-                    LEFT -> 1
-                    RIGHT -> 2
-                    UP -> 3
-                }
-                val painter = BitmapPainter(
-                    bitmap,
-                    IntOffset(columnIndex * 16, rowIndex * 16),
-                    IntSize(16, 16),
-                    FilterQuality.None
-                )
+                var deltaCount = remember { 0f }
+                var totalFrame by remember { mutableStateOf(0) }
 
                 Box(
                     Modifier
                         .fillMaxSize()
                 ) {
-                    Image(
-                        painter = painter,
-                        contentDescription = null,
-                        modifier = Modifier
-                            .offset(
-                                x = animateDpAsState(
-                                    x,
-                                    animationSpec = tween(easing = LinearEasing, durationMillis = movementDuration)
-                                ).value,
-                                y = animateDpAsState(
-                                    y,
-                                    animationSpec = tween(easing = LinearEasing, durationMillis = movementDuration)
-                                ).value
-                            )
-                            .size(64.dp)
-                    )
+                    Hero(totalFrame, pressedKeys)
+                }
+
+                LaunchedEffect(Unit) {
+                    while (true) {
+                        withFrameNanos { time ->
+                            val deltaMs = (time - prevTime) / (1000f * 1000f)
+                            deltaCount += deltaMs
+                            prevTime = time
+
+                            if (deltaCount >= frameDurationMs) {
+                                ++totalFrame
+                                deltaCount = 0f
+                            }
+                        }
+                    }
                 }
             }
         }
