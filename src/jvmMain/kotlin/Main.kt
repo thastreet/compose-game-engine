@@ -1,4 +1,3 @@
-
 import Animation.IDLE
 import Animation.WALKING
 import Direction.DOWN
@@ -46,7 +45,6 @@ enum class Animation {
 fun main() = application {
     val movementDuration = 256
     val movementDistance = 16.dp
-    val animationDuration = 256
 
     val pressed = remember { mutableSetOf<Key>() }
     var direction = remember { DOWN }
@@ -75,54 +73,55 @@ fun main() = application {
         MaterialTheme {
             Surface {
                 var prevTime = remember { 0L }
-                var totalMs = remember { movementDuration.toFloat() }
-                var animationMs = remember { animationDuration.toFloat() }
+                var movementMs = remember { movementDuration.toFloat() }
                 var x by remember { mutableStateOf(0.dp) }
                 var y by remember { mutableStateOf(0.dp) }
-                var frame by remember { mutableStateOf(0) }
+                var frame by remember { mutableStateOf(-1) }
 
                 LaunchedEffect(Unit) {
                     while (true) {
                         withFrameNanos { time ->
                             val deltaMs = (time - prevTime) / (1000f * 1000f)
-                            totalMs += deltaMs
-                            animationMs += deltaMs
+                            movementMs += deltaMs
                             prevTime = time
 
                             val directionPressed = pressed.intersect(directionKeys).isNotEmpty()
 
                             if (directionPressed) {
-                                if (totalMs >= movementDuration) {
-                                    if (pressed.contains(Key.DirectionLeft)) {
-                                        x -= movementDistance
-                                        direction = LEFT
-                                    } else if (pressed.contains(Key.DirectionRight)) {
-                                        x += movementDistance
-                                        direction = RIGHT
-                                    }
-                                    if (pressed.contains(Key.DirectionUp)) {
-                                        y -= movementDistance
-                                        direction = UP
-                                    } else if (pressed.contains(Key.DirectionDown)) {
-                                        y += movementDistance
-                                        direction = DOWN
-                                    }
-                                    totalMs = 0f
-                                }
+                                if (movementMs >= movementDuration) {
+                                    when {
+                                        pressed.contains(Key.DirectionLeft) -> {
+                                            x -= movementDistance
+                                            direction = LEFT
+                                        }
 
-                                if (animationMs >= animationDuration) {
+                                        pressed.contains(Key.DirectionRight) -> {
+                                            x += movementDistance
+                                            direction = RIGHT
+                                        }
+
+                                        pressed.contains(Key.DirectionUp) -> {
+                                            y -= movementDistance
+                                            direction = UP
+                                        }
+
+                                        pressed.contains(Key.DirectionDown) -> {
+                                            y += movementDistance
+                                            direction = DOWN
+                                        }
+                                    }
+                                    movementMs = 0f
+
                                     ++frame
                                     if (frame >= 4) {
                                         frame = 0
                                     }
-                                    animationMs = 0f
                                 }
 
                                 animation = WALKING
                             } else {
-                                animationMs = 0f
-                                totalMs = movementDuration.toFloat()
-                                frame = 0
+                                movementMs = movementDuration.toFloat()
+                                frame = -1
                                 animation = IDLE
                             }
                         }
@@ -147,7 +146,12 @@ fun main() = application {
                     RIGHT -> 2
                     UP -> 3
                 }
-                val painter = BitmapPainter(bitmap, IntOffset(columnIndex * 16, rowIndex * 16), IntSize(16, 16), FilterQuality.None)
+                val painter = BitmapPainter(
+                    bitmap,
+                    IntOffset(columnIndex * 16, rowIndex * 16),
+                    IntSize(16, 16),
+                    FilterQuality.None
+                )
 
                 Box(
                     Modifier
