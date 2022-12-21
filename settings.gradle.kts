@@ -13,5 +13,5 @@ pluginManagement {
     }
 }
 
-rootProject.name = "ComposeGame"
+rootProject.name = "engine"
 
