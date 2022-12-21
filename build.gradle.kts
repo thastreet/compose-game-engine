@@ -43,3 +43,7 @@ compose.desktop {
         }
     }
 }
+
+tasks.withType<KotlinCompile>().configureEach {
+    kotlinOptions.freeCompilerArgs += "-opt-in=kotlin.RequiresOptIn"
+}
