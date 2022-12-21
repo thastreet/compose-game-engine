@@ -9,7 +9,7 @@ import kotlin.random.Random
 fun NPC(totalFrame: Int) {
     Character(
         "npc_idle.png",
-        "hero_walking.png",
+        "npc_walking.png",
         totalFrame,
         60,
         x = Consts.MOVEMENT_DISTANCE * 10,
