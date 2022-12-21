@@ -1,3 +1,6 @@
+
+import Animation.IDLE
+import Animation.WALKING
 import Direction.DOWN
 import Direction.LEFT
 import Direction.RIGHT
@@ -34,13 +37,22 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 
+enum class Animation {
+    IDLE,
+    WALKING
+}
+
 @OptIn(ExperimentalComposeUiApi::class)
 fun main() = application {
-    val movementDuration = 128
-    val movementDistance = 8.dp
+    val movementDuration = 256
+    val movementDistance = 16.dp
+    val animationDuration = 256
 
     val pressed = remember { mutableSetOf<Key>() }
     var direction = remember { DOWN }
+    var animation = remember { IDLE }
+
+    val directionKeys = remember { setOf(Key.DirectionLeft, Key.DirectionRight, Key.DirectionUp, Key.DirectionDown) }
 
     Window(
         onCloseRequest = ::exitApplication,
@@ -64,49 +76,78 @@ fun main() = application {
             Surface {
                 var prevTime = remember { 0L }
                 var totalMs = remember { movementDuration.toFloat() }
+                var animationMs = remember { animationDuration.toFloat() }
                 var x by remember { mutableStateOf(0.dp) }
                 var y by remember { mutableStateOf(0.dp) }
+                var frame by remember { mutableStateOf(0) }
 
                 LaunchedEffect(Unit) {
                     while (true) {
                         withFrameNanos { time ->
                             val deltaMs = (time - prevTime) / (1000f * 1000f)
                             totalMs += deltaMs
+                            animationMs += deltaMs
                             prevTime = time
 
-                            if (totalMs >= movementDuration) {
-                                if (pressed.contains(Key.DirectionLeft)) {
-                                    x -= movementDistance
-                                    direction = LEFT
-                                } else if (pressed.contains(Key.DirectionRight)) {
-                                    x += movementDistance
-                                    direction = RIGHT
-                                }
-                                if (pressed.contains(Key.DirectionUp)) {
-                                    y -= movementDistance
-                                    direction = UP
-                                } else if (pressed.contains(Key.DirectionDown)) {
-                                    y += movementDistance
-                                    direction = DOWN
-                                }
-                                totalMs = 0f
-                            }
+                            val directionPressed = pressed.intersect(directionKeys).isNotEmpty()
 
-                            if (pressed.isEmpty()) {
+                            if (directionPressed) {
+                                if (totalMs >= movementDuration) {
+                                    if (pressed.contains(Key.DirectionLeft)) {
+                                        x -= movementDistance
+                                        direction = LEFT
+                                    } else if (pressed.contains(Key.DirectionRight)) {
+                                        x += movementDistance
+                                        direction = RIGHT
+                                    }
+                                    if (pressed.contains(Key.DirectionUp)) {
+                                        y -= movementDistance
+                                        direction = UP
+                                    } else if (pressed.contains(Key.DirectionDown)) {
+                                        y += movementDistance
+                                        direction = DOWN
+                                    }
+                                    totalMs = 0f
+                                }
+
+                                if (animationMs >= animationDuration) {
+                                    ++frame
+                                    if (frame >= 4) {
+                                        frame = 0
+                                    }
+                                    animationMs = 0f
+                                }
+
+                                animation = WALKING
+                            } else {
+                                animationMs = 0f
                                 totalMs = movementDuration.toFloat()
+                                frame = 0
+                                animation = IDLE
                             }
                         }
                     }
                 }
 
-                val bitmap = useResource("hero_idle.png") { loadImageBitmap(it) }
+                val resource = when (animation) {
+                    IDLE -> "hero_idle.png"
+                    WALKING -> "hero_walking.png"
+                }
+
+                val bitmap = useResource(resource) { loadImageBitmap(it) }
+
+                val columnIndex = when (animation) {
+                    IDLE -> 0
+                    WALKING -> frame
+                }
+
                 val rowIndex = when (direction) {
                     DOWN -> 0
                     LEFT -> 1
                     RIGHT -> 2
                     UP -> 3
                 }
-                val painter = BitmapPainter(bitmap, IntOffset(0, rowIndex * 16), IntSize(16, 16), FilterQuality.None)
+                val painter = BitmapPainter(bitmap, IntOffset(columnIndex * 16, rowIndex * 16), IntSize(16, 16), FilterQuality.None)
 
                 Box(
                     Modifier
