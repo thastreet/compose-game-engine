@@ -1,17 +1,16 @@
 
 import androidx.compose.foundation.Image
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.input.key.Key
 
 @Composable
-fun Hero(totalFrame: Int, keyPressed: Set<Key>) {
+fun NPC(totalFrame: Int) {
     Character(
-        "hero_idle.png",
+        "npc_idle.png",
         "hero_walking.png",
-        totalFrame
-    ) { painter, modifier, handleKeyPressed ->
-        handleKeyPressed(keyPressed)
-
+        totalFrame,
+        x = Consts.MOVEMENT_DISTANCE * 10,
+        y = Consts.MOVEMENT_DISTANCE * 10
+    ) { painter, modifier, _ ->
         Image(
             painter = painter,
             contentDescription = null,

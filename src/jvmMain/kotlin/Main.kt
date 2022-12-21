@@ -22,8 +22,6 @@ enum class Animation {
     WALKING
 }
 
-const val frameDurationMs = 60
-
 fun main() = application {
     val pressedKeys = remember { mutableSetOf<Key>() }
 
@@ -57,6 +55,7 @@ fun main() = application {
                         .fillMaxSize()
                 ) {
                     Hero(totalFrame, pressedKeys)
+                    NPC(totalFrame)
                 }
 
                 LaunchedEffect(Unit) {
@@ -66,7 +65,7 @@ fun main() = application {
                             deltaCount += deltaMs
                             prevTime = time
 
-                            if (deltaCount >= frameDurationMs) {
+                            if (deltaCount >= Consts.FRAME_DURATION_MS) {
                                 ++totalFrame
                                 deltaCount = 0f
                             }

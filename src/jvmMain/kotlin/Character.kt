@@ -10,7 +10,9 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -35,8 +37,49 @@ data class CharacterState(
     val animationFrame: Int = -1
 ) {
     val movementFrame = 4
-    val movementDistance = 16.dp
     val directionKeys = setOf(Key.DirectionLeft, Key.DirectionRight, Key.DirectionUp, Key.DirectionDown)
+}
+
+private fun handleKeyPressed(state: MutableState<CharacterState>, totalFrame: Int, pressedKeys: Set<Key>) {
+    val move = state.value.lastMovementFrame == null || totalFrame - (state.value.lastMovementFrame
+        ?: 0) >= state.value.movementFrame
+
+    if (move) {
+        state.value = state.value.copy(lastMovementFrame = totalFrame)
+    }
+
+    val directionPressed = pressedKeys.intersect(state.value.directionKeys).isNotEmpty()
+
+    if (directionPressed) {
+        if (move) {
+            when {
+                pressedKeys.contains(Key.DirectionLeft) -> {
+                    state.value = state.value.copy(x = state.value.x - Consts.MOVEMENT_DISTANCE, direction = LEFT)
+                }
+
+                pressedKeys.contains(Key.DirectionRight) -> {
+                    state.value = state.value.copy(x = state.value.x + Consts.MOVEMENT_DISTANCE, direction = RIGHT)
+                }
+
+                pressedKeys.contains(Key.DirectionUp) -> {
+                    state.value = state.value.copy(y = state.value.y - Consts.MOVEMENT_DISTANCE, direction = UP)
+                }
+
+                pressedKeys.contains(Key.DirectionDown) -> {
+                    state.value = state.value.copy(y = state.value.y + Consts.MOVEMENT_DISTANCE, direction = DOWN)
+                }
+            }
+
+            state.value = state.value.copy(animationFrame = state.value.animationFrame + 1)
+            if (state.value.animationFrame >= 4) {
+                state.value = state.value.copy(animationFrame = 0)
+            }
+        }
+
+        state.value = state.value.copy(animation = WALKING)
+    } else {
+        state.value = state.value.copy(animation = IDLE, lastMovementFrame = null, animationFrame = -1)
+    }
 }
 
 @Composable
@@ -44,9 +87,11 @@ fun Character(
     idle: String,
     walking: String,
     totalFrame: Int,
-    content: @Composable (painter: Painter, modifier: Modifier, handleKeyPressed: (pressedKeys: Set<Key>) -> Unit) -> Unit
+    x: Dp = 0.dp,
+    y: Dp = 0.dp,
+    content: @Composable (painter: Painter, modifier: Modifier, handleKeyPressed: (keyPressed: Set<Key>) -> Unit) -> Unit
 ) {
-    val state = remember { mutableStateOf(CharacterState()) }
+    val state = remember { mutableStateOf(CharacterState(x = x, y = y)) }
     val resource = when (state.value.animation) {
         IDLE -> idle
         WALKING -> walking
@@ -74,65 +119,25 @@ fun Character(
 
     content(
         painter,
-        Modifier.offset(
-            animateDpAsState(
-                state.value.x,
-                animationSpec = tween(
-                    easing = LinearEasing,
-                    durationMillis = state.value.movementFrame * frameDurationMs
-                )
-            ).value,
-            animateDpAsState(
-                state.value.y,
-                animationSpec = tween(
-                    easing = LinearEasing,
-                    durationMillis = state.value.movementFrame * frameDurationMs
-                )
-            ).value
-        )
+        Modifier
+            .offset(
+                animateDpAsState(
+                    state.value.x,
+                    animationSpec = tween(
+                        easing = LinearEasing,
+                        durationMillis = state.value.movementFrame * Consts.FRAME_DURATION_MS
+                    )
+                ).value,
+                animateDpAsState(
+                    state.value.y,
+                    animationSpec = tween(
+                        easing = LinearEasing,
+                        durationMillis = state.value.movementFrame * Consts.FRAME_DURATION_MS
+                    )
+                ).value
+            )
+            .size(Consts.CHARACTER_SIZE)
     ) { pressedKeys: Set<Key> ->
-        val move = state.value.lastMovementFrame == null || totalFrame - (state.value.lastMovementFrame
-            ?: 0) >= state.value.movementFrame
-
-        if (move) {
-            state.value = state.value.copy(lastMovementFrame = totalFrame)
-        }
-
-        val directionPressed = pressedKeys.intersect(state.value.directionKeys).isNotEmpty()
-
-        if (directionPressed) {
-            if (move) {
-                when {
-                    pressedKeys.contains(Key.DirectionLeft) -> {
-                        state.value =
-                            state.value.copy(x = state.value.x - state.value.movementDistance, direction = LEFT)
-                    }
-
-                    pressedKeys.contains(Key.DirectionRight) -> {
-                        state.value =
-                            state.value.copy(x = state.value.x + state.value.movementDistance, direction = RIGHT)
-                    }
-
-                    pressedKeys.contains(Key.DirectionUp) -> {
-                        state.value = state.value.copy(y = state.value.y - state.value.movementDistance, direction = UP)
-                    }
-
-                    pressedKeys.contains(Key.DirectionDown) -> {
-                        state.value =
-                            state.value.copy(y = state.value.y + state.value.movementDistance, direction = DOWN)
-                    }
-                }
-
-                state.value = state.value.copy(animationFrame = state.value.animationFrame + 1)
-                if (state.value.animationFrame >= 4) {
-                    state.value = state.value.copy(animationFrame = 0)
-                }
-            }
-
-            state.value = state.value.copy(animation = WALKING)
-        } else {
-            state.value = state.value.copy(animation = IDLE, lastMovementFrame = null, animationFrame = -1)
-        }
+        handleKeyPressed(state, totalFrame, pressedKeys)
     }
-
 }
