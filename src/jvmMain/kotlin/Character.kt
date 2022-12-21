@@ -9,6 +9,7 @@ import Direction.UP
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
@@ -19,7 +20,6 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.painter.BitmapPainter
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.res.loadImageBitmap
 import androidx.compose.ui.res.useResource
@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 
 data class CharacterState(
+    val movementFrame: Int,
     val x: Dp = 0.dp,
     val y: Dp = 0.dp,
     val direction: Direction = DOWN,
@@ -36,47 +37,44 @@ data class CharacterState(
     val animation: Animation = IDLE,
     val animationFrame: Int = -1
 ) {
-    val movementFrame = 4
     val directionKeys = setOf(Key.DirectionLeft, Key.DirectionRight, Key.DirectionUp, Key.DirectionDown)
+
+    fun shouldMove(totalFrame: Int) = lastMovementFrame == null || totalFrame - lastMovementFrame >= movementFrame
+}
+
+private fun move(state: MutableState<CharacterState>, totalFrame: Int, direction: Direction) {
+    state.value = state.value.copy(lastMovementFrame = totalFrame)
+
+    when (direction) {
+        DOWN -> state.value = state.value.copy(y = state.value.y + Consts.MOVEMENT_DISTANCE, direction = DOWN)
+        LEFT -> state.value = state.value.copy(x = state.value.x - Consts.MOVEMENT_DISTANCE, direction = LEFT)
+        RIGHT -> state.value = state.value.copy(x = state.value.x + Consts.MOVEMENT_DISTANCE, direction = RIGHT)
+        UP -> state.value = state.value.copy(y = state.value.y - Consts.MOVEMENT_DISTANCE, direction = UP)
+    }
+
+    state.value = state.value.copy(animationFrame = state.value.animationFrame + 1, animation = WALKING)
+    if (state.value.animationFrame >= 4) {
+        state.value = state.value.copy(animationFrame = 0)
+    }
 }
 
 private fun handleKeyPressed(state: MutableState<CharacterState>, totalFrame: Int, pressedKeys: Set<Key>) {
-    val move = state.value.lastMovementFrame == null || totalFrame - (state.value.lastMovementFrame
-        ?: 0) >= state.value.movementFrame
-
-    if (move) {
-        state.value = state.value.copy(lastMovementFrame = totalFrame)
-    }
-
     val directionPressed = pressedKeys.intersect(state.value.directionKeys).isNotEmpty()
 
     if (directionPressed) {
-        if (move) {
-            when {
-                pressedKeys.contains(Key.DirectionLeft) -> {
-                    state.value = state.value.copy(x = state.value.x - Consts.MOVEMENT_DISTANCE, direction = LEFT)
+        if (state.value.shouldMove(totalFrame)) {
+            move(
+                state,
+                totalFrame,
+                when {
+                    pressedKeys.contains(Key.DirectionLeft) -> LEFT
+                    pressedKeys.contains(Key.DirectionRight) -> RIGHT
+                    pressedKeys.contains(Key.DirectionUp) -> UP
+                    pressedKeys.contains(Key.DirectionDown) -> DOWN
+                    else -> throw IllegalArgumentException("Unsupported pressed key")
                 }
-
-                pressedKeys.contains(Key.DirectionRight) -> {
-                    state.value = state.value.copy(x = state.value.x + Consts.MOVEMENT_DISTANCE, direction = RIGHT)
-                }
-
-                pressedKeys.contains(Key.DirectionUp) -> {
-                    state.value = state.value.copy(y = state.value.y - Consts.MOVEMENT_DISTANCE, direction = UP)
-                }
-
-                pressedKeys.contains(Key.DirectionDown) -> {
-                    state.value = state.value.copy(y = state.value.y + Consts.MOVEMENT_DISTANCE, direction = DOWN)
-                }
-            }
-
-            state.value = state.value.copy(animationFrame = state.value.animationFrame + 1)
-            if (state.value.animationFrame >= 4) {
-                state.value = state.value.copy(animationFrame = 0)
-            }
+            )
         }
-
-        state.value = state.value.copy(animation = WALKING)
     } else {
         state.value = state.value.copy(animation = IDLE, lastMovementFrame = null, animationFrame = -1)
     }
@@ -87,11 +85,16 @@ fun Character(
     idle: String,
     walking: String,
     totalFrame: Int,
+    movementFrame: Int,
     x: Dp = 0.dp,
     y: Dp = 0.dp,
-    content: @Composable (painter: Painter, modifier: Modifier, handleKeyPressed: (keyPressed: Set<Key>) -> Unit) -> Unit
+    actions: @Composable (
+        handleKeyPressed: (keyPressed: Set<Key>) -> Unit,
+        move: (direction: Direction) -> Unit,
+        shouldMove: Boolean
+    ) -> Unit
 ) {
-    val state = remember { mutableStateOf(CharacterState(x = x, y = y)) }
+    val state = remember { mutableStateOf(CharacterState(movementFrame = movementFrame, x = x, y = y)) }
     val resource = when (state.value.animation) {
         IDLE -> idle
         WALKING -> walking
@@ -117,27 +120,38 @@ fun Character(
         FilterQuality.None
     )
 
-    content(
-        painter,
-        Modifier
+    val movementDurationMs = 4 * Consts.FRAME_DURATION_MS
+
+    Image(
+        painter = painter,
+        contentDescription = null,
+        modifier = Modifier
             .offset(
                 animateDpAsState(
                     state.value.x,
                     animationSpec = tween(
                         easing = LinearEasing,
-                        durationMillis = state.value.movementFrame * Consts.FRAME_DURATION_MS
+                        durationMillis = movementDurationMs
                     )
                 ).value,
                 animateDpAsState(
                     state.value.y,
                     animationSpec = tween(
                         easing = LinearEasing,
-                        durationMillis = state.value.movementFrame * Consts.FRAME_DURATION_MS
+                        durationMillis = movementDurationMs
                     )
                 ).value
             )
             .size(Consts.CHARACTER_SIZE)
-    ) { pressedKeys: Set<Key> ->
-        handleKeyPressed(state, totalFrame, pressedKeys)
-    }
+    )
+
+    actions(
+        { pressedKeys: Set<Key> ->
+            handleKeyPressed(state, totalFrame, pressedKeys)
+        },
+        { direction ->
+            move(state, totalFrame, direction)
+        },
+        state.value.shouldMove(totalFrame)
+    )
 }
