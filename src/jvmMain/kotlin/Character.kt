@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.FilterQuality
@@ -27,6 +28,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 data class CharacterState(
     val movementFrame: Int,
@@ -58,6 +61,10 @@ private fun move(state: MutableState<CharacterState>, totalFrame: Int, direction
     }
 }
 
+private fun endAnimation(state: MutableState<CharacterState>) {
+    state.value = state.value.copy(animation = IDLE, animationFrame = -1)
+}
+
 private fun handleKeyPressed(state: MutableState<CharacterState>, totalFrame: Int, pressedKeys: Set<Key>) {
     val directionPressed = pressedKeys.intersect(state.value.directionKeys).isNotEmpty()
 
@@ -76,7 +83,8 @@ private fun handleKeyPressed(state: MutableState<CharacterState>, totalFrame: In
             )
         }
     } else {
-        state.value = state.value.copy(animation = IDLE, lastMovementFrame = null, animationFrame = -1)
+        endAnimation(state)
+        state.value = state.value.copy(lastMovementFrame = null)
     }
 }
 
@@ -120,8 +128,6 @@ fun Character(
         FilterQuality.None
     )
 
-    val movementDurationMs = 4 * Consts.FRAME_DURATION_MS
-
     Image(
         painter = painter,
         contentDescription = null,
@@ -131,19 +137,21 @@ fun Character(
                     state.value.x,
                     animationSpec = tween(
                         easing = LinearEasing,
-                        durationMillis = movementDurationMs
+                        durationMillis = Consts.MOVEMENT_DURATION_MS
                     )
                 ).value,
                 animateDpAsState(
                     state.value.y,
                     animationSpec = tween(
                         easing = LinearEasing,
-                        durationMillis = movementDurationMs
+                        durationMillis = Consts.MOVEMENT_DURATION_MS
                     )
                 ).value
             )
             .size(Consts.CHARACTER_SIZE)
     )
+
+    val scope = rememberCoroutineScope()
 
     actions(
         { pressedKeys: Set<Key> ->
@@ -151,6 +159,10 @@ fun Character(
         },
         { direction ->
             move(state, totalFrame, direction)
+            scope.launch {
+                delay(Consts.MOVEMENT_DURATION_MS.toLong())
+                endAnimation(state)
+            }
         },
         state.value.shouldMove(totalFrame)
     )
