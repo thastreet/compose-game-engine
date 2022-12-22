@@ -13,12 +13,16 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.input.key.Key
@@ -30,6 +34,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.util.UUID
 
 data class CharacterState(
     val movementFrame: Int,
@@ -38,22 +43,60 @@ data class CharacterState(
     val direction: Direction = DOWN,
     val lastMovementFrame: Int? = null,
     val animation: Animation = IDLE,
-    val animationFrame: Int = -1
+    val animationFrame: Int = -1,
+    val uuid: String = UUID.randomUUID().toString()
 ) {
     val directionKeys = setOf(Key.DirectionLeft, Key.DirectionRight, Key.DirectionUp, Key.DirectionDown)
 
     fun shouldMove(totalFrame: Int) = lastMovementFrame == null || totalFrame - lastMovementFrame >= movementFrame
+
+    private val size = Size(Consts.CHARACTER_SIZE.value, Consts.CHARACTER_SIZE.value)
+    val rect = Rect(Offset(x.value, y.value), size)
+
+    fun getProjectedRect(direction: Direction): Rect =
+        when (direction) {
+            DOWN -> Rect(Offset(x.value, (y + Consts.MOVEMENT_DISTANCE).value), size)
+            LEFT -> Rect(Offset((x - Consts.MOVEMENT_DISTANCE).value, y.value), size)
+            RIGHT -> Rect(Offset((x + Consts.MOVEMENT_DISTANCE).value, y.value), size)
+            UP -> Rect(Offset(x.value, (y - Consts.MOVEMENT_DISTANCE).value), size)
+        }
 }
+
+private fun CharacterState.testCollision(): Boolean =
+    CollisionDetector.states.values.any { uuid != it.uuid && getProjectedRect(direction).overlaps(it.rect) }
 
 private fun move(state: MutableState<CharacterState>, totalFrame: Int, direction: Direction) {
     state.value = state.value.copy(lastMovementFrame = totalFrame)
 
     when (direction) {
-        DOWN -> state.value = state.value.copy(y = state.value.y + Consts.MOVEMENT_DISTANCE, direction = DOWN)
-        LEFT -> state.value = state.value.copy(x = state.value.x - Consts.MOVEMENT_DISTANCE, direction = LEFT)
-        RIGHT -> state.value = state.value.copy(x = state.value.x + Consts.MOVEMENT_DISTANCE, direction = RIGHT)
-        UP -> state.value = state.value.copy(y = state.value.y - Consts.MOVEMENT_DISTANCE, direction = UP)
+        DOWN -> {
+            state.value = state.value.copy(direction = DOWN)
+            if (!state.value.testCollision()) {
+                state.value = state.value.copy(y = state.value.y + Consts.MOVEMENT_DISTANCE)
+            }
+        }
+        LEFT -> {
+            state.value = state.value.copy(direction = LEFT)
+            if (!state.value.testCollision()) {
+                state.value = state.value.copy(x = state.value.x - Consts.MOVEMENT_DISTANCE)
+            }
+        }
+        RIGHT -> {
+            state.value = state.value.copy(direction = RIGHT)
+            if (!state.value.testCollision()) {
+                state.value = state.value.copy(x = state.value.x + Consts.MOVEMENT_DISTANCE)
+            }
+        }
+
+        UP -> {
+            state.value = state.value.copy(direction = UP)
+            if (!state.value.testCollision()) {
+                state.value = state.value.copy(y = state.value.y - Consts.MOVEMENT_DISTANCE)
+            }
+        }
     }
+
+    CollisionDetector.states[state.value.uuid] = state.value
 
     state.value = state.value.copy(animationFrame = state.value.animationFrame + 1, animation = WALKING)
     if (state.value.animationFrame >= 4) {
@@ -166,4 +209,8 @@ fun Character(
         },
         state.value.shouldMove(totalFrame)
     )
+
+    LaunchedEffect(Unit) {
+        CollisionDetector.states[state.value.uuid] = state.value
+    }
 }
