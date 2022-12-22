@@ -29,7 +29,7 @@ data class CharacterState(
     val directionKeys = setOf(Key.DirectionLeft, Key.DirectionRight, Key.DirectionUp, Key.DirectionDown)
 
     fun shouldMove(totalFrame: Int) = lastMovementFrame == null || totalFrame - lastMovementFrame >= movementFrame
-    fun shouldAnimate(totalFrame: Int) = lastAnimationFrame == null || totalFrame - lastAnimationFrame >= 12
+    fun shouldAnimate(totalFrame: Int) = lastAnimationFrame == null || totalFrame - lastAnimationFrame >= 10
 
     private val size = Size(Consts.CHARACTER_SIZE.value, Consts.CHARACTER_SIZE.value)
 

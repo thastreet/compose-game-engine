@@ -118,6 +118,7 @@ fun Character(
         },
         { direction ->
             move(state, totalFrame, direction)
+            animate(state, totalFrame)
             scope.launch {
                 delay(Consts.MOVEMENT_DURATION_MS.toLong())
                 endAnimation(state)
@@ -133,7 +134,6 @@ fun Character(
 
 private fun move(state: MutableState<CharacterState>, totalFrame: Int, direction: Direction) {
     if (state.value.animating) {
-        println("Movement blocked by animation!")
         return
     }
 
@@ -172,6 +172,13 @@ private fun move(state: MutableState<CharacterState>, totalFrame: Int, direction
     CollisionDetector.updatePosition(state.value)
 }
 
+private fun animate(state: MutableState<CharacterState>, totalFrame: Int) {
+    state.value = state.value.copy(lastAnimationFrame = totalFrame, animationFrame = state.value.animationFrame + 1, animation = WALKING)
+    if (state.value.animationFrame >= 4) {
+        state.value = state.value.copy(animationFrame = 0)
+    }
+}
+
 private fun endAnimation(state: MutableState<CharacterState>) {
     state.value = state.value.copy(animation = IDLE, animationFrame = -1)
 }
@@ -195,10 +202,7 @@ private fun handleKeyPressed(state: MutableState<CharacterState>, totalFrame: In
         }
 
         if (state.value.shouldAnimate(totalFrame)) {
-            state.value = state.value.copy(lastAnimationFrame = totalFrame, animationFrame = state.value.animationFrame + 1, animation = WALKING)
-            if (state.value.animationFrame >= 4) {
-                state.value = state.value.copy(animationFrame = 0)
-            }
+            animate(state, totalFrame)
         }
     } else {
         endAnimation(state)

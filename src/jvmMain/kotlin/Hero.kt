@@ -7,7 +7,7 @@ fun Hero(totalFrame: Int, keyPressed: Set<Key>) {
         "hero_idle.png",
         "hero_walking.png",
         totalFrame,
-        24
+        20
     ) { handleKeyPressed, _, _ ->
         handleKeyPressed(keyPressed)
     }
