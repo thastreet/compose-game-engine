@@ -48,7 +48,7 @@ fun Character(
     ) -> Unit
 ) {
     val state = remember { mutableStateOf(CharacterState(movementFrame = movementFrame, x = x, y = y)) }
-    
+
     val resource = when (state.value.animation) {
         IDLE -> idle
         WALKING -> walking
