@@ -20,9 +20,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.input.key.Key
@@ -34,102 +31,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.util.UUID
 
-data class CharacterState(
-    val movementFrame: Int,
-    val x: Dp = 0.dp,
-    val y: Dp = 0.dp,
-    val direction: Direction = DOWN,
-    val lastMovementFrame: Int? = null,
-    val animation: Animation = IDLE,
-    val animationFrame: Int = -1,
-    val uuid: String = UUID.randomUUID().toString()
-) {
-    val directionKeys = setOf(Key.DirectionLeft, Key.DirectionRight, Key.DirectionUp, Key.DirectionDown)
-
-    fun shouldMove(totalFrame: Int) = lastMovementFrame == null || totalFrame - lastMovementFrame >= movementFrame
-
-    private val size = Size(Consts.CHARACTER_SIZE.value, Consts.CHARACTER_SIZE.value)
-    val rect = Rect(Offset(x.value, y.value), size)
-
-    fun getProjectedRect(direction: Direction): Rect =
-        when (direction) {
-            DOWN -> Rect(Offset(x.value, (y + Consts.MOVEMENT_DISTANCE).value), size)
-            LEFT -> Rect(Offset((x - Consts.MOVEMENT_DISTANCE).value, y.value), size)
-            RIGHT -> Rect(Offset((x + Consts.MOVEMENT_DISTANCE).value, y.value), size)
-            UP -> Rect(Offset(x.value, (y - Consts.MOVEMENT_DISTANCE).value), size)
-        }
-}
-
-private fun CharacterState.testCollision(): Boolean =
-    CollisionDetector.states.values.any { uuid != it.uuid && getProjectedRect(direction).overlaps(it.rect) }
-
-private fun move(state: MutableState<CharacterState>, totalFrame: Int, direction: Direction) {
-    state.value = state.value.copy(lastMovementFrame = totalFrame)
-
-    when (direction) {
-        DOWN -> {
-            state.value = state.value.copy(direction = DOWN)
-            if (!state.value.testCollision()) {
-                state.value = state.value.copy(y = state.value.y + Consts.MOVEMENT_DISTANCE)
-            }
-        }
-        LEFT -> {
-            state.value = state.value.copy(direction = LEFT)
-            if (!state.value.testCollision()) {
-                state.value = state.value.copy(x = state.value.x - Consts.MOVEMENT_DISTANCE)
-            }
-        }
-        RIGHT -> {
-            state.value = state.value.copy(direction = RIGHT)
-            if (!state.value.testCollision()) {
-                state.value = state.value.copy(x = state.value.x + Consts.MOVEMENT_DISTANCE)
-            }
-        }
-
-        UP -> {
-            state.value = state.value.copy(direction = UP)
-            if (!state.value.testCollision()) {
-                state.value = state.value.copy(y = state.value.y - Consts.MOVEMENT_DISTANCE)
-            }
-        }
-    }
-
-    CollisionDetector.states[state.value.uuid] = state.value
-
-    state.value = state.value.copy(animationFrame = state.value.animationFrame + 1, animation = WALKING)
-    if (state.value.animationFrame >= 4) {
-        state.value = state.value.copy(animationFrame = 0)
-    }
-}
-
-private fun endAnimation(state: MutableState<CharacterState>) {
-    state.value = state.value.copy(animation = IDLE, animationFrame = -1)
-}
-
-private fun handleKeyPressed(state: MutableState<CharacterState>, totalFrame: Int, pressedKeys: Set<Key>) {
-    val directionPressed = pressedKeys.intersect(state.value.directionKeys).isNotEmpty()
-
-    if (directionPressed) {
-        if (state.value.shouldMove(totalFrame)) {
-            move(
-                state,
-                totalFrame,
-                when {
-                    pressedKeys.contains(Key.DirectionLeft) -> LEFT
-                    pressedKeys.contains(Key.DirectionRight) -> RIGHT
-                    pressedKeys.contains(Key.DirectionUp) -> UP
-                    pressedKeys.contains(Key.DirectionDown) -> DOWN
-                    else -> throw IllegalArgumentException("Unsupported pressed key")
-                }
-            )
-        }
-    } else {
-        endAnimation(state)
-        state.value = state.value.copy(lastMovementFrame = null)
-    }
-}
 
 @Composable
 fun Character(
@@ -146,6 +48,7 @@ fun Character(
     ) -> Unit
 ) {
     val state = remember { mutableStateOf(CharacterState(movementFrame = movementFrame, x = x, y = y)) }
+    
     val resource = when (state.value.animation) {
         IDLE -> idle
         WALKING -> walking
@@ -164,6 +67,7 @@ fun Character(
         RIGHT -> 2
         UP -> 3
     }
+
     val painter = BitmapPainter(
         bitmap,
         IntOffset(columnIndex * 16, rowIndex * 16),
@@ -211,6 +115,74 @@ fun Character(
     )
 
     LaunchedEffect(Unit) {
-        CollisionDetector.states[state.value.uuid] = state.value
+        CollisionDetector.updatePosition(state.value)
+    }
+}
+
+private fun move(state: MutableState<CharacterState>, totalFrame: Int, direction: Direction) {
+    state.value = state.value.copy(lastMovementFrame = totalFrame)
+
+    when (direction) {
+        DOWN -> {
+            state.value = state.value.copy(direction = DOWN)
+            if (!CollisionDetector.detectCollision(state.value, direction)) {
+                state.value = state.value.copy(y = state.value.y + Consts.MOVEMENT_DISTANCE)
+            }
+        }
+
+        LEFT -> {
+            state.value = state.value.copy(direction = LEFT)
+            if (!CollisionDetector.detectCollision(state.value, direction)) {
+                state.value = state.value.copy(x = state.value.x - Consts.MOVEMENT_DISTANCE)
+            }
+        }
+
+        RIGHT -> {
+            state.value = state.value.copy(direction = RIGHT)
+            if (!CollisionDetector.detectCollision(state.value, direction)) {
+                state.value = state.value.copy(x = state.value.x + Consts.MOVEMENT_DISTANCE)
+            }
+        }
+
+        UP -> {
+            state.value = state.value.copy(direction = UP)
+            if (!CollisionDetector.detectCollision(state.value, direction)) {
+                state.value = state.value.copy(y = state.value.y - Consts.MOVEMENT_DISTANCE)
+            }
+        }
+    }
+
+    CollisionDetector.updatePosition(state.value)
+
+    state.value = state.value.copy(animationFrame = state.value.animationFrame + 1, animation = WALKING)
+    if (state.value.animationFrame >= 4) {
+        state.value = state.value.copy(animationFrame = 0)
+    }
+}
+
+private fun endAnimation(state: MutableState<CharacterState>) {
+    state.value = state.value.copy(animation = IDLE, animationFrame = -1)
+}
+
+private fun handleKeyPressed(state: MutableState<CharacterState>, totalFrame: Int, pressedKeys: Set<Key>) {
+    val directionPressed = pressedKeys.intersect(state.value.directionKeys).isNotEmpty()
+
+    if (directionPressed) {
+        if (state.value.shouldMove(totalFrame)) {
+            move(
+                state,
+                totalFrame,
+                when {
+                    pressedKeys.contains(Key.DirectionLeft) -> LEFT
+                    pressedKeys.contains(Key.DirectionRight) -> RIGHT
+                    pressedKeys.contains(Key.DirectionUp) -> UP
+                    pressedKeys.contains(Key.DirectionDown) -> DOWN
+                    else -> throw IllegalArgumentException("Unsupported pressed key")
+                }
+            )
+        }
+    } else {
+        endAnimation(state)
+        state.value = state.value.copy(lastMovementFrame = null)
     }
 }
