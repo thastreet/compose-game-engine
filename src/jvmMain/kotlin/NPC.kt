@@ -3,17 +3,22 @@ import Direction.LEFT
 import Direction.RIGHT
 import Direction.UP
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.unit.Dp
 import kotlin.random.Random
 
 @Composable
-fun NPC(totalFrame: Int) {
+fun NPC(
+    x: Dp,
+    y: Dp,
+    totalFrame: Int
+) {
     Character(
         "npc_idle.png",
         "npc_walking.png",
         totalFrame,
-        60,
-        x = Consts.MOVEMENT_DISTANCE * 10,
-        y = Consts.MOVEMENT_DISTANCE * 10
+        200,
+        x = x,
+        y = y
     ) { _, move, shouldMove ->
         if (shouldMove) {
             Random.nextInt(4).let { direction ->

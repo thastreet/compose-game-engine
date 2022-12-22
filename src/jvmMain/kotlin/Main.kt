@@ -3,12 +3,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -46,32 +42,26 @@ fun main() = application {
     ) {
         MaterialTheme {
             Surface {
-                var prevTime = remember { 0L }
-                var deltaCount = remember { 0f }
-                var totalFrame by remember { mutableStateOf(0) }
+                val totalFrame = remember { mutableStateOf(0) }
 
                 Box(
                     Modifier
                         .fillMaxSize()
                 ) {
-                    Hero(totalFrame, pressedKeys)
-                    NPC(totalFrame)
+                    NPC(
+                        Consts.MOVEMENT_DISTANCE * 10,
+                        Consts.MOVEMENT_DISTANCE * 10,
+                        totalFrame.value
+                    )
+                    NPC(
+                        Consts.MOVEMENT_DISTANCE * 5,
+                        Consts.MOVEMENT_DISTANCE * 5,
+                        totalFrame.value
+                    )
+                    Hero(totalFrame.value, pressedKeys)
                 }
 
-                LaunchedEffect(Unit) {
-                    while (true) {
-                        withFrameNanos { time ->
-                            val deltaMs = (time - prevTime) / (1000f * 1000f)
-                            deltaCount += deltaMs
-                            prevTime = time
-
-                            if (deltaCount >= Consts.FRAME_DURATION_MS) {
-                                ++totalFrame
-                                deltaCount = 0f
-                            }
-                        }
-                    }
-                }
+                Engine(totalFrame)
             }
         }
     }
