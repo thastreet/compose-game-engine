@@ -15,9 +15,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.FilterQuality
@@ -75,6 +77,13 @@ fun Character(
         FilterQuality.None
     )
 
+    var lastX: Dp? by remember { mutableStateOf(null) }
+    var lastY: Dp? by remember { mutableStateOf(null) }
+
+    if (lastX != null && lastX != state.value.x || lastY != null && lastY != state.value.y) {
+        state.value = state.value.copy(animating = true)
+    }
+
     Image(
         painter = painter,
         contentDescription = null,
@@ -86,17 +95,20 @@ fun Character(
                         easing = LinearEasing,
                         durationMillis = Consts.MOVEMENT_DURATION_MS
                     )
-                ).value,
+                ) { state.value = state.value.copy(animating = false) }.value,
                 animateDpAsState(
                     state.value.y,
                     animationSpec = tween(
                         easing = LinearEasing,
                         durationMillis = Consts.MOVEMENT_DURATION_MS
                     )
-                ).value
+                ) { state.value = state.value.copy(animating = false) }.value
             )
             .size(Consts.CHARACTER_SIZE)
     )
+
+    lastX = state.value.x
+    lastY = state.value.y
 
     val scope = rememberCoroutineScope()
 
@@ -120,6 +132,11 @@ fun Character(
 }
 
 private fun move(state: MutableState<CharacterState>, totalFrame: Int, direction: Direction) {
+    if (state.value.animating) {
+        println("Movement blocked by animation!")
+        return
+    }
+
     state.value = state.value.copy(lastMovementFrame = totalFrame)
 
     when (direction) {
@@ -153,11 +170,6 @@ private fun move(state: MutableState<CharacterState>, totalFrame: Int, direction
     }
 
     CollisionDetector.updatePosition(state.value)
-
-    state.value = state.value.copy(animationFrame = state.value.animationFrame + 1, animation = WALKING)
-    if (state.value.animationFrame >= 4) {
-        state.value = state.value.copy(animationFrame = 0)
-    }
 }
 
 private fun endAnimation(state: MutableState<CharacterState>) {
@@ -180,6 +192,13 @@ private fun handleKeyPressed(state: MutableState<CharacterState>, totalFrame: In
                     else -> throw IllegalArgumentException("Unsupported pressed key")
                 }
             )
+        }
+
+        if (state.value.shouldAnimate(totalFrame)) {
+            state.value = state.value.copy(lastAnimationFrame = totalFrame, animationFrame = state.value.animationFrame + 1, animation = WALKING)
+            if (state.value.animationFrame >= 4) {
+                state.value = state.value.copy(animationFrame = 0)
+            }
         }
     } else {
         endAnimation(state)

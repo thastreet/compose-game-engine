@@ -48,16 +48,7 @@ fun main() = application {
                     Modifier
                         .fillMaxSize()
                 ) {
-                    NPC(
-                        Consts.MOVEMENT_DISTANCE * 10,
-                        Consts.MOVEMENT_DISTANCE * 10,
-                        totalFrame.value
-                    )
-                    NPC(
-                        Consts.MOVEMENT_DISTANCE * 5,
-                        Consts.MOVEMENT_DISTANCE * 5,
-                        totalFrame.value
-                    )
+                    Object(Consts.MOVEMENT_DISTANCE * 11, Consts.MOVEMENT_DISTANCE * 11)
                     Hero(totalFrame.value, pressedKeys)
                 }
 

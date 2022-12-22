@@ -20,13 +20,16 @@ data class CharacterState(
     val y: Dp = 0.dp,
     val direction: Direction = DOWN,
     val lastMovementFrame: Int? = null,
+    val lastAnimationFrame: Int? = null,
     val animation: Animation = IDLE,
     val animationFrame: Int = -1,
-    val uuid: String = UUID.randomUUID().toString()
+    val uuid: String = UUID.randomUUID().toString(),
+    val animating: Boolean = false
 ) {
     val directionKeys = setOf(Key.DirectionLeft, Key.DirectionRight, Key.DirectionUp, Key.DirectionDown)
 
     fun shouldMove(totalFrame: Int) = lastMovementFrame == null || totalFrame - lastMovementFrame >= movementFrame
+    fun shouldAnimate(totalFrame: Int) = lastAnimationFrame == null || totalFrame - lastAnimationFrame >= 12
 
     private val size = Size(Consts.CHARACTER_SIZE.value, Consts.CHARACTER_SIZE.value)
 
