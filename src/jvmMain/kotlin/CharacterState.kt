@@ -16,22 +16,22 @@ import java.util.UUID
 
 data class CharacterState(
     val movementFrame: Int,
-    val x: Dp = 0.dp,
-    val y: Dp = 0.dp,
+    override val x: Dp = 0.dp,
+    override val y: Dp = 0.dp,
     val direction: Direction = DOWN,
     val lastMovementFrame: Int? = null,
     val lastAnimationFrame: Int? = null,
     val animation: Animation = IDLE,
     val animationFrame: Int = -1,
-    val uuid: String = UUID.randomUUID().toString(),
+    override val id: String = UUID.randomUUID().toString(),
     val animating: Boolean = false
-) {
+) : State {
     val directionKeys = setOf(Key.DirectionLeft, Key.DirectionRight, Key.DirectionUp, Key.DirectionDown)
 
     fun shouldMove(totalFrame: Int) = lastMovementFrame == null || totalFrame - lastMovementFrame >= movementFrame
     fun shouldAnimate(totalFrame: Int) = lastAnimationFrame == null || totalFrame - lastAnimationFrame >= 10
 
-    private val size = Size(Consts.CHARACTER_SIZE.value, Consts.CHARACTER_SIZE.value)
+    override val size = Size(Consts.CHARACTER_SIZE.value, Consts.CHARACTER_SIZE.value)
 
     fun getProjectedRect(direction: Direction): Rect =
         when (direction) {

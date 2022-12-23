@@ -10,16 +10,18 @@ import kotlin.random.Random
 fun NPC(
     x: Dp,
     y: Dp,
-    totalFrame: Int
+    totalFrame: Int,
+    collisionDetector: CollisionDetector
 ) {
     Character(
         "npc_idle.png",
         "npc_walking.png",
         totalFrame,
         200,
-        x = x,
-        y = y
-    ) { _, move, shouldMove ->
+        x,
+        y,
+        collisionDetector
+    ) { _, _, move, shouldMove ->
         if (shouldMove) {
             Random.nextInt(4).let { direction ->
                 when (direction) {

@@ -1,4 +1,3 @@
-
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.MaterialTheme
@@ -43,14 +42,12 @@ fun main() = application {
         MaterialTheme {
             Surface {
                 val totalFrame = remember { mutableStateOf(0) }
+                val collisionDetector = remember { CollisionDetector() }
 
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                ) {
-                    NPC(Consts.MOVEMENT_DISTANCE * 5, Consts.MOVEMENT_DISTANCE * 5, totalFrame.value)
-                    Object(Consts.MOVEMENT_DISTANCE * 11, Consts.MOVEMENT_DISTANCE * 11)
-                    Hero(totalFrame.value, pressedKeys)
+                Box(Modifier.fillMaxSize()) {
+                    NPC(Consts.MOVEMENT_DISTANCE * 5, Consts.MOVEMENT_DISTANCE * 5, totalFrame.value, collisionDetector)
+                    Object(Consts.MOVEMENT_DISTANCE * 3, Consts.MOVEMENT_DISTANCE * 3, true, collisionDetector)
+                    Hero(totalFrame.value, pressedKeys, collisionDetector)
                 }
 
                 Engine(totalFrame)

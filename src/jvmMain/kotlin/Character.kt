@@ -30,7 +30,6 @@ import androidx.compose.ui.res.useResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -41,9 +40,11 @@ fun Character(
     walking: String,
     totalFrame: Int,
     movementFrame: Int,
-    x: Dp = 0.dp,
-    y: Dp = 0.dp,
-    actions: @Composable (
+    x: Dp,
+    y: Dp,
+    collisionDetector: CollisionDetector,
+    content: @Composable (
+        state: MutableState<CharacterState>,
         handleKeyPressed: (keyPressed: Set<Key>) -> Unit,
         move: (direction: Direction) -> Unit,
         shouldMove: Boolean
@@ -112,12 +113,13 @@ fun Character(
 
     val scope = rememberCoroutineScope()
 
-    actions(
+    content(
+        state,
         { pressedKeys: Set<Key> ->
-            handleKeyPressed(state, totalFrame, pressedKeys)
+            handleKeyPressed(state, totalFrame, pressedKeys, collisionDetector)
         },
         { direction ->
-            move(state, totalFrame, direction)
+            move(state, totalFrame, direction, collisionDetector)
             animate(state, totalFrame)
             scope.launch {
                 delay(Consts.MOVEMENT_DURATION_MS.toLong())
@@ -128,11 +130,11 @@ fun Character(
     )
 
     LaunchedEffect(Unit) {
-        CollisionDetector.updatePosition(state.value)
+        collisionDetector.updatePosition(state.value)
     }
 }
 
-private fun move(state: MutableState<CharacterState>, totalFrame: Int, direction: Direction) {
+private fun move(state: MutableState<CharacterState>, totalFrame: Int, direction: Direction, collisionDetector: CollisionDetector) {
     if (state.value.animating) {
         return
     }
@@ -142,34 +144,34 @@ private fun move(state: MutableState<CharacterState>, totalFrame: Int, direction
     when (direction) {
         DOWN -> {
             state.value = state.value.copy(direction = DOWN)
-            if (!CollisionDetector.detectCollision(state.value, direction)) {
+            if (!collisionDetector.detectCollision(state.value)) {
                 state.value = state.value.copy(y = state.value.y + Consts.MOVEMENT_DISTANCE)
             }
         }
 
         LEFT -> {
             state.value = state.value.copy(direction = LEFT)
-            if (!CollisionDetector.detectCollision(state.value, direction)) {
+            if (!collisionDetector.detectCollision(state.value)) {
                 state.value = state.value.copy(x = state.value.x - Consts.MOVEMENT_DISTANCE)
             }
         }
 
         RIGHT -> {
             state.value = state.value.copy(direction = RIGHT)
-            if (!CollisionDetector.detectCollision(state.value, direction)) {
+            if (!collisionDetector.detectCollision(state.value)) {
                 state.value = state.value.copy(x = state.value.x + Consts.MOVEMENT_DISTANCE)
             }
         }
 
         UP -> {
             state.value = state.value.copy(direction = UP)
-            if (!CollisionDetector.detectCollision(state.value, direction)) {
+            if (!collisionDetector.detectCollision(state.value)) {
                 state.value = state.value.copy(y = state.value.y - Consts.MOVEMENT_DISTANCE)
             }
         }
     }
 
-    CollisionDetector.updatePosition(state.value)
+    collisionDetector.updatePosition(state.value)
 }
 
 private fun animate(state: MutableState<CharacterState>, totalFrame: Int) {
@@ -183,7 +185,7 @@ private fun endAnimation(state: MutableState<CharacterState>) {
     state.value = state.value.copy(animation = IDLE, animationFrame = -1)
 }
 
-private fun handleKeyPressed(state: MutableState<CharacterState>, totalFrame: Int, pressedKeys: Set<Key>) {
+private fun handleKeyPressed(state: MutableState<CharacterState>, totalFrame: Int, pressedKeys: Set<Key>, collisionDetector: CollisionDetector) {
     val directionPressed = pressedKeys.intersect(state.value.directionKeys).isNotEmpty()
 
     if (directionPressed) {
@@ -197,7 +199,8 @@ private fun handleKeyPressed(state: MutableState<CharacterState>, totalFrame: In
                     pressedKeys.contains(Key.DirectionUp) -> UP
                     pressedKeys.contains(Key.DirectionDown) -> DOWN
                     else -> throw IllegalArgumentException("Unsupported pressed key")
-                }
+                },
+                collisionDetector
             )
         }
 

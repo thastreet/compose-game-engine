@@ -1,17 +1,29 @@
-
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.geometry.Size
 
-object CollisionDetector {
-    private val states = mutableMapOf<String, Rect>()
+class CollisionDetector {
+    data class CollisionInfo(
+        val id: String,
+        val rect: Rect,
+        val canBePickedUp: Boolean
+    )
 
-    fun updatePosition(state: CharacterState) {
-        states[state.uuid] = Rect(Offset(state.x.value, state.y.value), Size(Consts.CHARACTER_SIZE.value, Consts.CHARACTER_SIZE.value))
+    private val states = mutableMapOf<String, CollisionInfo>()
+
+    fun updatePosition(state: State) {
+        states[state.id] = CollisionInfo(
+            state.id,
+            Rect(Offset(state.x.value, state.y.value), state.size),
+            state is ObjectState && state.canBePickedUp
+        )
     }
 
-    fun detectCollision(state: CharacterState, direction: Direction): Boolean =
-        states.entries.any {
-            state.uuid != it.key && state.getProjectedRect(direction).overlaps(it.value)
-        }
+    fun detectCollision(state: CharacterState): Boolean = facing(state) != null
+
+    fun facing(state: CharacterState): CollisionInfo? =
+        states.entries.firstOrNull { state.id != it.key && state.getProjectedRect(state.direction).overlaps(it.value.rect) }?.value
+
+    fun remove(id: String) {
+        states.remove(id)
+    }
 }
