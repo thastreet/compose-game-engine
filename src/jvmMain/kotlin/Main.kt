@@ -1,15 +1,19 @@
+
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
 
 enum class Animation {
@@ -37,7 +41,8 @@ fun main() = application {
 
                 else -> false
             }
-        }
+        },
+        state = WindowState(size = DpSize(Consts.MOVEMENT_DISTANCE * 16, Consts.MOVEMENT_DISTANCE * 16))
     ) {
         MaterialTheme {
             Surface {
@@ -48,6 +53,7 @@ fun main() = application {
                     NPC(Consts.MOVEMENT_DISTANCE * 5, Consts.MOVEMENT_DISTANCE * 5, totalFrame.value, collisionDetector)
                     Object(Consts.MOVEMENT_DISTANCE * 3, Consts.MOVEMENT_DISTANCE * 3, true, collisionDetector)
                     Hero(totalFrame.value, pressedKeys, collisionDetector)
+                    Dialog(10, 10, Modifier.align(Alignment.TopEnd))
                 }
 
                 Engine(totalFrame)
