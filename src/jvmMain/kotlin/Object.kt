@@ -18,20 +18,20 @@ import androidx.compose.ui.unit.IntSize
 
 @Composable
 fun Object(
+    name: String,
     x: Dp,
     y: Dp,
-    canBePickedUp: Boolean,
-    collisionDetector: CollisionDetector
+    collisionDetector: CollisionDetector,
+    stash: Stash
 ) {
-    val state by remember { mutableStateOf(ObjectState(x, y, canBePickedUp)) }
-    val pickedUp = remember { mutableStateOf(false) }
+    val state by remember { mutableStateOf(ObjectState(x, y, name)) }
 
     LaunchedEffect(Unit) {
         collisionDetector.updatePosition(state)
-        Stash.register(state, pickedUp)
+        stash.register(state.id, StashedObject(false, state.name))
     }
 
-    if (pickedUp.value) return
+    if (stash.isPickedUp(state.id)) return
 
     val bitmap = useResource("objects.png") { loadImageBitmap(it) }
 

@@ -1,6 +1,11 @@
-import androidx.compose.runtime.MutableState
+interface Stash {
+    fun register(id: String, stashedObject: StashedObject)
 
-object Stash {
+    fun pickup(id: String)
+
+    fun isPickedUp(id: String): Boolean
+
+    /*
     private val objects = mutableMapOf<String, MutableState<Boolean>>()
 
     fun register(state: ObjectState, pickedUp: MutableState<Boolean>) {
@@ -9,5 +14,5 @@ object Stash {
 
     fun pickup(id: String) {
         objects.getValue(id).value = true
-    }
+    }*/
 }
