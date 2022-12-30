@@ -9,7 +9,6 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import java.util.UUID
@@ -26,8 +25,6 @@ data class CharacterState(
     override val id: String = UUID.randomUUID().toString(),
     val animating: Boolean = false
 ) : State {
-    val directionKeys = setOf(Key.DirectionLeft, Key.DirectionRight, Key.DirectionUp, Key.DirectionDown)
-
     fun shouldMove(totalFrame: Int) = lastMovementFrame == null || totalFrame - lastMovementFrame >= movementFrame
     fun shouldAnimate(totalFrame: Int) = lastAnimationFrame == null || totalFrame - lastAnimationFrame >= 10
 

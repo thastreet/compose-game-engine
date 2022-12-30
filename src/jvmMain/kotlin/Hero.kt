@@ -6,7 +6,7 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun Hero(totalFrame: Int, keyPressed: Set<Key>, collisionDetector: CollisionDetector, stash: Stash) {
+fun Hero(totalFrame: Int, pressedKeys: Set<Key>, collisionDetector: CollisionDetector, stash: Stash, shouldHandleKeyPressed: Boolean) {
     Character(
         "hero_idle.png",
         "hero_walking.png",
@@ -16,10 +16,12 @@ fun Hero(totalFrame: Int, keyPressed: Set<Key>, collisionDetector: CollisionDete
         0.dp,
         collisionDetector
     ) { state, handleKeyPressed, _, _ ->
-        handleKeyPressed(keyPressed)
+        if (shouldHandleKeyPressed) {
+            handleKeyPressed(pressedKeys)
+        }
 
         val collisionInfo = collisionDetector.facing(state.value)
-        if (keyPressed.contains(Key.A) && collisionInfo != null && collisionInfo.canBePickedUp) {
+        if (pressedKeys.contains(Key.A) && collisionInfo != null && collisionInfo.canBePickedUp) {
             stash.pickup(collisionInfo.id)
             collisionDetector.remove(collisionInfo.id)
         }

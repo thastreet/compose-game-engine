@@ -1,6 +1,11 @@
-import androidx.compose.material.Text
+@file:OptIn(ExperimentalComposeUiApi::class)
+
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -32,13 +37,14 @@ val fontFamily = FontFamily(
 )
 
 val textStyle = TextStyle(
-    fontSize = 12.sp,
-    lineHeight = 20.sp,
+    fontSize = 10.sp,
+    lineHeight = 16.sp,
     fontFamily = fontFamily
 )
 
 fun main() = application {
     val pressedKeys = remember { mutableSetOf<Key>() }
+    var lastUpKey: Key? by remember { mutableStateOf(null) }
 
     Window(
         onCloseRequest = ::exitApplication,
@@ -52,6 +58,7 @@ fun main() = application {
 
                 (it.type == KeyEventType.KeyUp) -> {
                     pressedKeys.remove(it.key)
+                    lastUpKey = it.key
                     true
                 }
 
@@ -63,13 +70,38 @@ fun main() = application {
         Engine { totalFrame, collisionDetector, stash ->
             NPC(Consts.MOVEMENT_DISTANCE * 5, Consts.MOVEMENT_DISTANCE * 5, totalFrame, collisionDetector)
             Object("Pokeball", Consts.MOVEMENT_DISTANCE * 3, Consts.MOVEMENT_DISTANCE * 3, collisionDetector, stash)
-            Hero(totalFrame, pressedKeys, collisionDetector, stash)
-            Dialog(10, 10, Modifier.align(Alignment.TopEnd)) { modifier ->
-                Text(
-                    text = stash.pickedUp.joinToString("\n") { stashedObject -> stashedObject.name.uppercase() },
-                    modifier = modifier,
-                    style = textStyle
-                )
+
+            var dialogItems: List<String>? by remember { mutableStateOf(null) }
+
+            Hero(totalFrame, pressedKeys, collisionDetector, stash, dialogItems == null)
+
+            if (lastUpKey == Key.Escape) {
+                if (dialogItems != null) {
+                    dialogItems = null
+                } else {
+                    dialogItems = stash.pickedUp.map { it.name }
+                }
+                lastUpKey = null
+            }
+
+            dialogItems.let { items ->
+                if (!items.isNullOrEmpty()) {
+                    Dialog(
+                        10,
+                        10,
+                        pressedKeys,
+                        totalFrame,
+                        items,
+                        {
+                            if (it == 0) {
+                                dialogItems = listOf("Yes", "Yessir", "Oui")
+                            } else {
+                                dialogItems = null
+                            }
+                        },
+                        Modifier.align(Alignment.TopEnd)
+                    )
+                }
             }
         }
     }

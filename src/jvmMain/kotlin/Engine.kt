@@ -13,8 +13,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 
 data class StashedObject(
-    val pickedUp: Boolean,
-    val name: String
+    val name: String,
+    val pickedUp: Boolean = false
 )
 
 data class CollisionInfo(
@@ -75,6 +75,10 @@ fun Engine(content: @Composable BoxScope.(Int, CollisionDetector, Stash) -> Unit
 
                         override val pickedUp: List<StashedObject>
                             get() = objects.value.values.filter { it.pickedUp }
+                    }.apply {
+                        repeat(10) {
+                            register(it.toString(), StashedObject("Item $it", pickedUp = true))
+                        }
                     }
                 }
 

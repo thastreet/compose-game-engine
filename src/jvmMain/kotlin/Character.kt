@@ -45,7 +45,7 @@ fun Character(
     collisionDetector: CollisionDetector,
     content: @Composable (
         state: MutableState<CharacterState>,
-        handleKeyPressed: (keyPressed: Set<Key>) -> Unit,
+        handleKeyPressed: (pressedKeys: Set<Key>) -> Unit,
         move: (direction: Direction) -> Unit,
         shouldMove: Boolean
     ) -> Unit
@@ -186,7 +186,7 @@ private fun endAnimation(state: MutableState<CharacterState>) {
 }
 
 private fun handleKeyPressed(state: MutableState<CharacterState>, totalFrame: Int, pressedKeys: Set<Key>, collisionDetector: CollisionDetector) {
-    val directionPressed = pressedKeys.intersect(state.value.directionKeys).isNotEmpty()
+    val directionPressed = pressedKeys.intersect(Consts.DIRECTION_KEYS).isNotEmpty()
 
     if (directionPressed) {
         if (state.value.shouldMove(totalFrame)) {

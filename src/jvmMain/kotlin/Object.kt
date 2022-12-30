@@ -28,7 +28,7 @@ fun Object(
 
     LaunchedEffect(Unit) {
         collisionDetector.updatePosition(state)
-        stash.register(state.id, StashedObject(false, state.name))
+        stash.register(state.id, StashedObject(state.name))
     }
 
     if (stash.isPickedUp(state.id)) return
