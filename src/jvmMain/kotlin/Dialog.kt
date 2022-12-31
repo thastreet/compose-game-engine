@@ -46,7 +46,7 @@ fun Dialog(
     var index: Int by remember { mutableStateOf(0) }
 
     if (directionPressed) {
-        if (lastMovementFrame == null || totalFrame - (lastMovementFrame ?: 0) >= 20) {
+        if (lastMovementFrame == null || totalFrame - (lastMovementFrame ?: 0) >= 10) {
             when {
                 pressedKeys.contains(Key.DirectionDown) -> if (index < items.size - 1) index += 1
                 pressedKeys.contains(Key.DirectionUp) -> if (index > 0) index -= 1

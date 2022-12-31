@@ -1,5 +1,8 @@
 @file:OptIn(ExperimentalComposeUiApi::class)
 
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -7,20 +10,31 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asSkiaBitmap
+import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.res.loadImageBitmap
+import androidx.compose.ui.res.useResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.platform.Font
 import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.times
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
+import org.jetbrains.skiko.toBufferedImage
+import kotlin.math.roundToInt
 
 enum class Animation {
     IDLE,
@@ -68,6 +82,7 @@ fun main() = application {
         state = WindowState(size = DpSize(Consts.MOVEMENT_DISTANCE * 16, Consts.MOVEMENT_DISTANCE * 16))
     ) {
         Engine { totalFrame, collisionDetector, stash ->
+            Map()
             NPC(Consts.MOVEMENT_DISTANCE * 5, Consts.MOVEMENT_DISTANCE * 5, totalFrame, collisionDetector)
             Object("Pokeball", Consts.MOVEMENT_DISTANCE * 3, Consts.MOVEMENT_DISTANCE * 3, collisionDetector, stash)
 
@@ -106,3 +121,25 @@ fun main() = application {
         }
     }
 }
+
+@Composable
+fun Map() {
+    val map by remember { mutableStateOf(json.decodeFromString(SavedMap.serializer(), useResource("map.json") { stream -> stream.bufferedReader().use { it.readText() } })) }
+    val mapImage: ImageBitmap by remember { mutableStateOf(useResource("map.png") { loadImageBitmap(it) }) }
+
+    Canvas(Modifier.fillMaxSize()) {
+        map.points.entries.map { it.toPair() }.forEach { (destination, source) ->
+            // TODO: extract each sub images once in order to improve performance
+            drawImage(
+                image = mapImage.asSkiaBitmap().toBufferedImage().getSubimage(source.x * 16, source.y * 16, 16, 16).toComposeImageBitmap(),
+                dstOffset = IntOffset(
+                    x = (destination.x * Consts.MOVEMENT_DISTANCE).toPx().roundToInt(),
+                    y = (destination.y * Consts.MOVEMENT_DISTANCE).toPx().roundToInt()
+                ),
+                dstSize = IntSize(Consts.MOVEMENT_DISTANCE.toPx().roundToInt(), Consts.MOVEMENT_DISTANCE.toPx().roundToInt()),
+                filterQuality = FilterQuality.None
+            )
+        }
+    }
+}
+

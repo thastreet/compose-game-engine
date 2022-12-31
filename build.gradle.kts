@@ -3,7 +3,8 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
     kotlin("multiplatform")
-    id("org.jetbrains.compose").version("1.2.1")
+    id("org.jetbrains.compose") version "1.2.1"
+    kotlin("plugin.serialization") version "1.7.20"
 }
 
 group = "com.street"
@@ -27,6 +28,7 @@ kotlin {
         val jvmMain by getting {
             dependencies {
                 implementation(compose.desktop.currentOs)
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.4.1")
             }
         }
         val jvmTest by getting

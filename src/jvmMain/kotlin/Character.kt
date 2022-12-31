@@ -23,6 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.res.loadImageBitmap
@@ -51,13 +52,13 @@ fun Character(
     ) -> Unit
 ) {
     val state = remember { mutableStateOf(CharacterState(movementFrame = movementFrame, x = x, y = y)) }
+    val idleImage: ImageBitmap by remember { mutableStateOf(useResource(idle) { loadImageBitmap(it) }) }
+    val walkingImage: ImageBitmap by remember { mutableStateOf(useResource(walking) { loadImageBitmap(it) }) }
 
-    val resource = when (state.value.animation) {
-        IDLE -> idle
-        WALKING -> walking
+    val image = when (state.value.animation) {
+        IDLE -> idleImage
+        WALKING -> walkingImage
     }
-
-    val bitmap = useResource(resource) { loadImageBitmap(it) }
 
     val columnIndex = when (state.value.animation) {
         IDLE -> 0
@@ -72,7 +73,7 @@ fun Character(
     }
 
     val painter = BitmapPainter(
-        bitmap,
+        image,
         IntOffset(columnIndex * 16, rowIndex * 16),
         IntSize(16, 16),
         FilterQuality.None
