@@ -11,6 +11,9 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.unit.times
+import java.util.UUID
 
 data class StashedObject(
     val name: String,
@@ -43,6 +46,21 @@ fun Engine(content: @Composable BoxScope.(Int, CollisionDetector, Stash) -> Unit
                                         state.id,
                                         Rect(Offset(state.x.value, state.y.value), state.size),
                                         state is ObjectState
+                                    )
+                                )
+                            }
+                        }
+
+                        override fun updatePosition(indexPoint: IndexPoint) {
+                            states.value = states.value.toMutableMap().apply {
+                                val id = UUID.randomUUID().toString()
+
+                                set(
+                                    id,
+                                    CollisionInfo(
+                                        id,
+                                        Rect(Offset((indexPoint.x * Consts.CASE_SIZE).value, (indexPoint.y * Consts.CASE_SIZE).value), Size(Consts.CASE_SIZE.value, Consts.CASE_SIZE.value)),
+                                        false
                                     )
                                 )
                             }

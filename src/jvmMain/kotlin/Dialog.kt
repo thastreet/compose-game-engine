@@ -36,7 +36,7 @@ fun Dialog(
     pressedKeys: Set<Key>,
     totalFrame: Int,
     items: List<String>,
-    onIndexSelected: (Int) -> Unit,
+    onItemSelected: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val directionPressed = pressedKeys.intersect(Consts.DIRECTION_KEYS).isNotEmpty()
@@ -57,7 +57,7 @@ fun Dialog(
     }
 
     if (pressedKeys.contains(Key.A)) {
-        onIndexSelected(index)
+        onItemSelected(index)
     }
 
     Box(
