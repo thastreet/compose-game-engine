@@ -79,12 +79,12 @@ fun main() = application {
                 else -> false
             }
         },
-        state = WindowState(size = DpSize(Consts.MOVEMENT_DISTANCE * 16, Consts.MOVEMENT_DISTANCE * 16))
+        state = WindowState(size = DpSize(Consts.CASE_SIZE * 16, Consts.CASE_SIZE * 16))
     ) {
         Engine { totalFrame, collisionDetector, stash ->
             Map()
-            NPC(Consts.MOVEMENT_DISTANCE * 5, Consts.MOVEMENT_DISTANCE * 5, totalFrame, collisionDetector)
-            Object("Pokeball", Consts.MOVEMENT_DISTANCE * 3, Consts.MOVEMENT_DISTANCE * 3, collisionDetector, stash)
+            NPC(Consts.CASE_SIZE * 5, Consts.CASE_SIZE * 5, totalFrame, collisionDetector)
+            Object("Pokeball", Consts.CASE_SIZE * 3, Consts.CASE_SIZE * 3, collisionDetector, stash)
 
             var dialogItems: List<String>? by remember { mutableStateOf(null) }
 
@@ -127,16 +127,21 @@ fun Map() {
     val map by remember { mutableStateOf(json.decodeFromString(SavedMap.serializer(), useResource("map.json") { stream -> stream.bufferedReader().use { it.readText() } })) }
     val mapImage: ImageBitmap by remember { mutableStateOf(useResource("map.png") { loadImageBitmap(it) }) }
 
+    val images: Map<IndexPoint, ImageBitmap> by remember {
+        mutableStateOf(
+            map.points.values.associateWith { mapImage.asSkiaBitmap().toBufferedImage().getSubimage(it.x * 16, it.y * 16, 16, 16).toComposeImageBitmap() }
+        )
+    }
+
     Canvas(Modifier.fillMaxSize()) {
         map.points.entries.map { it.toPair() }.forEach { (destination, source) ->
-            // TODO: extract each sub images once in order to improve performance
             drawImage(
-                image = mapImage.asSkiaBitmap().toBufferedImage().getSubimage(source.x * 16, source.y * 16, 16, 16).toComposeImageBitmap(),
+                image = images.getValue(source),
                 dstOffset = IntOffset(
-                    x = (destination.x * Consts.MOVEMENT_DISTANCE).toPx().roundToInt(),
-                    y = (destination.y * Consts.MOVEMENT_DISTANCE).toPx().roundToInt()
+                    x = (destination.x * Consts.CASE_SIZE).toPx().roundToInt(),
+                    y = (destination.y * Consts.CASE_SIZE).toPx().roundToInt()
                 ),
-                dstSize = IntSize(Consts.MOVEMENT_DISTANCE.toPx().roundToInt(), Consts.MOVEMENT_DISTANCE.toPx().roundToInt()),
+                dstSize = IntSize(Consts.CASE_SIZE.toPx().roundToInt(), Consts.CASE_SIZE.toPx().roundToInt()),
                 filterQuality = FilterQuality.None
             )
         }

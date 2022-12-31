@@ -146,28 +146,28 @@ private fun move(state: MutableState<CharacterState>, totalFrame: Int, direction
         DOWN -> {
             state.value = state.value.copy(direction = DOWN)
             if (!collisionDetector.detectCollision(state.value)) {
-                state.value = state.value.copy(y = state.value.y + Consts.MOVEMENT_DISTANCE)
+                state.value = state.value.copy(y = state.value.y + Consts.CASE_SIZE)
             }
         }
 
         LEFT -> {
             state.value = state.value.copy(direction = LEFT)
             if (!collisionDetector.detectCollision(state.value)) {
-                state.value = state.value.copy(x = state.value.x - Consts.MOVEMENT_DISTANCE)
+                state.value = state.value.copy(x = state.value.x - Consts.CASE_SIZE)
             }
         }
 
         RIGHT -> {
             state.value = state.value.copy(direction = RIGHT)
             if (!collisionDetector.detectCollision(state.value)) {
-                state.value = state.value.copy(x = state.value.x + Consts.MOVEMENT_DISTANCE)
+                state.value = state.value.copy(x = state.value.x + Consts.CASE_SIZE)
             }
         }
 
         UP -> {
             state.value = state.value.copy(direction = UP)
             if (!collisionDetector.detectCollision(state.value)) {
-                state.value = state.value.copy(y = state.value.y - Consts.MOVEMENT_DISTANCE)
+                state.value = state.value.copy(y = state.value.y - Consts.CASE_SIZE)
             }
         }
     }

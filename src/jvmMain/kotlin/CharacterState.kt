@@ -32,9 +32,9 @@ data class CharacterState(
 
     fun getProjectedRect(direction: Direction): Rect =
         when (direction) {
-            DOWN -> Rect(Offset(x.value, (y + Consts.MOVEMENT_DISTANCE).value), size)
-            LEFT -> Rect(Offset((x - Consts.MOVEMENT_DISTANCE).value, y.value), size)
-            RIGHT -> Rect(Offset((x + Consts.MOVEMENT_DISTANCE).value, y.value), size)
-            UP -> Rect(Offset(x.value, (y - Consts.MOVEMENT_DISTANCE).value), size)
+            DOWN -> Rect(Offset(x.value, (y + Consts.CASE_SIZE).value), size)
+            LEFT -> Rect(Offset((x - Consts.CASE_SIZE).value, y.value), size)
+            RIGHT -> Rect(Offset((x + Consts.CASE_SIZE).value, y.value), size)
+            UP -> Rect(Offset(x.value, (y - Consts.CASE_SIZE).value), size)
         }
 }
